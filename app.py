@@ -36,6 +36,7 @@ app = Flask(__name__)
 @app.route("/")
 def welcome():
     """List all available api routes."""
+    print("Welcome to the SQL-Alchemy Challenge")
     return (
         f"Welcome to the SQL-Alchemy APP API!<br/>"
         f"Available Routes:<br/>"

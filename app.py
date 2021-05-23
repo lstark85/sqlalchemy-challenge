@@ -36,15 +36,14 @@ app = Flask(__name__)
 @app.route("/")
 def welcome():
     """List all available api routes."""
-    print("Welcome to the SQL-Alchemy Challenge")
     return (
         f"Welcome to the SQL-Alchemy APP API!<br/>"
         f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/[start_date format:yyyy-mm-dd]<br/>"
-        f"/api/v1.0/[start_date format:yyyy-mm-dd]/[end_date format:yyyy-mm-dd]<br/>"
+        f"Precipitation: /api/v1.0/precipitation<br/>"
+        f"Stations: /api/v1.0/stations<br/>"
+        f"Temperature for one year: /api/v1.0/tobs<br/>"
+        f"Temperature stat from the start date(yyyy-mm-dd): /api/v1.0/yyyy-mm-dd<br/>"
+        f"Temperature stat from start to end dates(yyyy-mm-dd): /api/v1.0/yyyy-mm-dd/yyyy-mm-dd<br/>"
     )
 
 
@@ -92,34 +91,27 @@ def stations():
     return jsonify(all_stations)
 
 
-@app.route("/api/v1.0/tobs")
+@app.route('/api/v1.0/tobs')
 def tobs():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all TOBs"""
     # Query all tobs
-
-    results = session.query(Measurement.date,  Measurement.tobs,Measurement.prcp).\
-                filter(Measurement.date >= '2016-08-23').\
-                filter(Measurement.station=='USC00519281').\
-                order_by(Measurement.date).all()
-
+    lateststr = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+    latestdate = dt.datetime.strptime(lateststr, '%Y-%m-%d')
+    querydate = dt.date(latestdate.year -1, latestdate.month, latestdate.day)
+    sel = [Measurement.date,Measurement.tobs]
+    queryresult = session.query(*sel).filter(Measurement.date >= querydate).all()
     session.close()
 
-   
-
-    # Convert the list to Dictionary
-    all_tobs = []
-    for prcp, date,tobs in results:
+    tobsall = []
+    for date, tobs in queryresult:
         tobs_dict = {}
-        tobs_dict["prcp"] = prcp
-        tobs_dict["date"] = date
-        tobs_dict["tobs"] = tobs
-        
-        all_tobs.append(tobs_dict)
+        tobs_dict["Date"] = date
+        tobs_dict["Tobs"] = tobs
+        tobsall.append(tobs_dict)
 
-    return jsonify(all_tobs)
+    return jsonify(tobsall)
 
     
 @app.route("/api/v1.0/<start_date>")
